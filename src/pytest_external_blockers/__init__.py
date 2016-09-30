@@ -4,12 +4,14 @@ import pytest
 from _pytest.mark import MarkInfo, MarkDecorator
 from _pytest.skipping import MarkEvaluator
 
+
 class BlockOutcome(pytest.skip.Exception):
     """ raised from pytest.block """
     pass
 
 
 BLOCKED = 'blocked'
+
 
 def block(reason):
     """ block a test """

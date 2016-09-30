@@ -11,5 +11,9 @@ if __name__ == "__main__":
         package_dir={'': 'src'},
         setup_requires=["setuptools-scm"],
         install_requires=["pytest"],
-        entry_points = { 'pytest11':['external-blockers = pytest_external_blockers']}
+        entry_points={
+            'pytest11': [
+                'external-blockers = pytest_external_blockers'
+            ],
+        }
     )
