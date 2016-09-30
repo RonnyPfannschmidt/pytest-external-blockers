@@ -5,6 +5,6 @@ python:
 - '3.4'
 - pypy
 install:
-- pip install tox setuptols_scm
+- pip install tox setuptools_scm
 script:
 - tox -e py
