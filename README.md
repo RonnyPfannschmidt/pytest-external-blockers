@@ -1,1 +1,0 @@
-# pytest-external-blockers
