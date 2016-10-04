@@ -8,3 +8,12 @@ install:
 - pip install tox setuptools_scm
 script:
 - tox -e py
+deploy:
+  provider: pypi
+  user: ronny
+  password:
+    secure: XarU2QZ0kmezz49IUhPFMty1KDs5ClXOyWjFCuU9G8VGSHaTdlRrqSK09lMovV4L2g3vYIqAcnQ4YtnInfI22bR/bhKMXPB0cje94McLYGdwGQ+OTZFX0GiQO6QUOIuy+GiKWxZ+n8DSnN9a1w3/QVLMAJCtcMMzy7lc7LlhzfzY3iSeKFZYyJDW8CvjYJJROFEuBUVBNqtGhEFGocnBim8w9ZkMfydpXcxuNuJrEdbPDevTITJtWRen1cmyj174wru6gPDzxfu3+dpkymS7DFTC9vDRHmQDHOLOlO+WjAWkJJQ0+GhICSOiBxOyd6KN7TBGaonEeVvivIvvMVF8YdnOu8X1rRHI+uK3uloKvp4BmrGnM4QoYDE0j4i9zMWugW0TdaGFQ0X3/bfo3LHanr0b8l7o1zqh6iT9evURc0v2/+An4ZGwG5SG3TMi0NNvBgUqGBcwpNG/gr/B9BLPyXso6Wf/xIIiHHqdhdM9e4kigM3I00ooT3Ix6CUVE9h87lXjSBNQHtaYSeFBX350xmHCTA1jc6kq5yTcJDR5qHrW1Utbwtt8t2K4YFiPMTPfhrZ0if02WRMc+ddzYspxS/9qY2qT8GPEfslCkaZ96xYOpuSZmIN/MYBY3iBWGElpPeaTYUYCDXNRGf9QkARXXXBuUsbTXkdomt4LHItgRDw=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: RonnyPfannschmidt/pytest-external-blockers
