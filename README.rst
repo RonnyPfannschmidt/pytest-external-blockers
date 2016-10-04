@@ -1,14 +1,15 @@
 pytest-external-blockers
 ========================
 
-a distinct pytest  test result for tests
-that are skipped for external/environmental reasons
-that may daynamically change even for the same test environment
+ a pytest outcome for tests you
+ dont run for external/environmental reason
+
 
 examples of such reasons reasons are
 
-* lack of access to a bugtracker
-* lack of access to a backend service
+* lack of access to a bugtracker telling you what tests apply
+  for the current version of software under test
+* lack of access to a backend service providing essential details for the tests in question 
 * issue in a bugtracker is unresolved
 * failure of the internet connection
 
