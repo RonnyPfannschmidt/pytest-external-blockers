@@ -4,10 +4,13 @@ python:
 - '3.3'
 - '3.4'
 - pypy
+env:
+  - PYTEST=29
+  - PYTEST=30
 install:
 - pip install tox setuptools_scm
 script:
-- tox -e py
+- tox -e py-pytest$PYTEST
 deploy:
   provider: pypi
   user: ronny
