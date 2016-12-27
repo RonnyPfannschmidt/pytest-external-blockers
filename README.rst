@@ -1,11 +1,10 @@
 pytest-external-blockers
 ========================
 
- a pytest outcome for tests you
- dont run for external/environmental reason
+A pytest outcome for tests you dont run for external/environmental reason.
 
 
-examples of such reasons reasons are
+examples of such reasons reasons are:
 
 * lack of access to a bugtracker telling you what tests apply
   for the current version of software under test
@@ -20,18 +19,20 @@ install
 -------
 
 ::
+
     $ pip install pytest-external-blockers
 
 
 use
 ---
 
-::
+.. code-block:: python
+
     import os
     import pytest
     from .issues import get_tracker
 
-    pytestmark = pytest.mark.skipifif(
+    pytestmark = pytest.mark.skipif(
         "BUGTRACKER" in os.environ,
         reason="no bugtracker configured")
 
