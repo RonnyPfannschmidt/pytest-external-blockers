@@ -7,6 +7,7 @@ if __name__ == "__main__":
             "a special outcome for tests "
             "that are blocked for external reasons"),
         use_scm_version=True,
+        url="https://github.com/RonnyPfannschmidt-RedHat/pytest-external-blockers",
         packages=find_packages("src"),
         package_dir={'': 'src'},
         setup_requires=["setuptools-scm"],
