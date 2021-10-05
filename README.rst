@@ -8,7 +8,7 @@ examples of such reasons reasons are:
 
 * lack of access to a bugtracker telling you what tests apply
   for the current version of software under test
-* lack of access to a backend service providing essential details for the tests in question 
+* lack of access to a backend service providing essential details for the tests in question
 * issue in a bugtracker is unresolved
 * failure of the internet connection
 
