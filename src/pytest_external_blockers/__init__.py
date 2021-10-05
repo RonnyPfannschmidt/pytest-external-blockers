@@ -1,26 +1,36 @@
-import pytest
-from _pytest.mark import MarkDecorator, Mark
-from _pytest.config import Config
-from _pytest.skipping import evaluate_condition, evaluate_skip_marks
-import attr
+from typing import NoReturn
 from typing import Optional
 
-class BlockOutcome(pytest.skip.Exception):
-    """raised from pytest.block"""
+import attr
+import pytest
+from _pytest.config import Config
+from _pytest.outcomes import _with_exception
+from _pytest.outcomes import OutcomeException
+from _pytest.skipping import evaluate_condition
 
-    pass
+
+class Blocked(OutcomeException):
+    # XXX hackish: on 3k we fake to live in the builtins
+    # in order to have Skipped exception printing shorter/nicer
+    __module__ = "builtins"
+
+    def __init__(
+        self,
+        msg: str,
+        pytrace: bool = False,
+    ) -> None:
+        super().__init__(msg=msg, pytrace=pytrace)
 
 
 BLOCKED = "blocked"
 
 
-def block(reason):
+@_with_exception(Blocked)
+def block(reason: str) -> NoReturn:
     """block a test"""
     __tracebackhide__ = True
-    raise BlockOutcome(reason)
+    raise Blocked(reason)
 
-
-block.Exception = BlockOutcome
 
 @attr.s(slots=True, frozen=True, auto_attribs=True)
 class Block:
@@ -28,12 +38,17 @@ class Block:
 
     reason: str
 
+
 @pytest.hookimpl()
-def pytest_configure(config:  Config):
-    config.addinivalue_line("markers", "block(reason): mark a test as blocked from execution for a reason")
+def pytest_configure(config: Config):
+    config.addinivalue_line(
+        "markers", "block(reason): mark a test as blocked from execution"
+    )
 
-    config.addinivalue_line("markers", "blockif(*conditions, reason): mark a test as blocked from execution for a reason")
-
+    config.addinivalue_line(
+        "markers",
+        "blockif(*conditions, reason): mark a test as blocked from execution",
+    )
 
 
 def evaluate_block_marks(item: pytest.Item) -> Optional[Block]:
@@ -67,13 +82,12 @@ def evaluate_block_marks(item: pytest.Item) -> Optional[Block]:
     return None
 
 
-
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item: pytest.Item):
     # Check if block or blockif are specified as pytest marks
 
     # todo: use stash
-    item._should_block = should_block = evaluate_block_marks(item)
+    item.__dict__["_should_block"] = should_block = evaluate_block_marks(item)
     if should_block is not None:
         block(should_block.reason)
 
@@ -88,10 +102,11 @@ def pytest_report_teststatus(report):
 def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
-    if rep.skipped and call.excinfo.errisinstance(BlockOutcome):
-        rep.outcome = "blocked"
+    excinfo = call.excinfo
+    if excinfo is not None and excinfo.errisinstance(Blocked):
+        rep.outcome = BLOCKED
 
-        evalblock = getattr(rep, "_should_block", None)
+        evalblock = getattr(item, "_should_block", None)
         if evalblock is not None and type(rep.longrepr) is tuple:
             # taken from _pytest.skipping, patch failure location to item name
             filename, line, reason = rep.longrepr
