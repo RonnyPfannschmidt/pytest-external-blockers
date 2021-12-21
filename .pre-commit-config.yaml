@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/psf/black
-    rev: 21.9b0
+    rev: 21.12b0
     hooks:
     - id: black
       args: [--safe, --quiet]
@@ -17,20 +17,20 @@ repos:
     -   id: check-yaml
     -   id: debug-statements
 -   repo: https://github.com/PyCQA/flake8
-    rev: 3.9.2
+    rev: 4.0.1
     hooks:
     -   id: flake8
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.29.0
+    rev: v2.29.1
     hooks:
     - id: pyupgrade
       args: [--py36-plus]
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.18.0
+    rev: v1.20.0
     hooks:
     -   id: setup-cfg-fmt
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.910-1'
+    rev: 'v0.920'
     hooks:
     -   id: mypy
         additional_dependencies:
