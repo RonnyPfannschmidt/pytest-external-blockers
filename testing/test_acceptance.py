@@ -1,5 +1,14 @@
-def test_block_function(testdir):
-    testdir.makepyfile(
+from __future__ import annotations
+
+from collections.abc import Callable
+
+import pytest
+
+
+def test_block_function(
+    pytester: pytest.Pytester, run_blocked: Callable[..., pytest.RunResult]
+) -> None:
+    pytester.makepyfile(
         """
         from pytest_external_blockers import block
 
@@ -8,7 +17,7 @@ def test_block_function(testdir):
     """
     )
 
-    res = testdir.runpytest()
+    res = run_blocked()
     res.stdout.fnmatch_lines(
         [
             "* 1 blocked *",
@@ -16,8 +25,10 @@ def test_block_function(testdir):
     )
 
 
-def test_block_mark(testdir):
-    testdir.makepyfile(
+def test_block_mark(
+    pytester: pytest.Pytester, run_blocked: Callable[..., pytest.RunResult]
+) -> None:
+    pytester.makepyfile(
         """
         import pytest
 
@@ -27,7 +38,7 @@ def test_block_mark(testdir):
     """
     )
 
-    res = testdir.runpytest()
+    res = run_blocked()
     res.stdout.fnmatch_lines(
         [
             "* 1 blocked *",
@@ -35,8 +46,10 @@ def test_block_mark(testdir):
     )
 
 
-def test_blockif_mark(testdir):
-    testdir.makepyfile(
+def test_blockif_mark(
+    pytester: pytest.Pytester, run_blocked: Callable[..., pytest.RunResult]
+) -> None:
+    pytester.makepyfile(
         """
         import pytest
         @pytest.mark.blockif(True, reason="yay")
@@ -45,7 +58,7 @@ def test_blockif_mark(testdir):
     """
     )
 
-    res = testdir.runpytest()
+    res = run_blocked()
     res.stdout.fnmatch_lines(
         [
             "* 1 blocked *",

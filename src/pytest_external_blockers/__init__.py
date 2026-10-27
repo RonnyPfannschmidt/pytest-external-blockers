@@ -1,10 +1,11 @@
+from typing import ClassVar
+from typing import NamedTuple
 from typing import NoReturn
 from typing import Optional
+from typing import Type
 
-import attr
 import pytest
 from _pytest.config import Config
-from _pytest.outcomes import _with_exception
 from _pytest.outcomes import OutcomeException
 from _pytest.skipping import evaluate_condition
 
@@ -25,15 +26,25 @@ class Blocked(OutcomeException):
 BLOCKED = "blocked"
 
 
-@_with_exception(Blocked)
-def block(reason: str) -> NoReturn:
-    """block a test"""
-    __tracebackhide__ = True
-    raise Blocked(reason)
+class _Block:
+    """``block(reason)`` raises :class:`Blocked`.
+
+    ``Exception`` matches the attribute ``_with_exception`` used to attach,
+    before pytest 7 removed that private helper.
+    """
+
+    Exception: ClassVar[Type[Blocked]] = Blocked
+
+    def __call__(self, reason: str = "") -> NoReturn:
+        """block a test"""
+        __tracebackhide__ = True
+        raise Blocked(msg=reason, pytrace=False)
 
 
-@attr.s(slots=True, frozen=True, auto_attribs=True)
-class Block:
+block = _Block()
+
+
+class Block(NamedTuple):
     """The result of evaluate_skip_marks()."""
 
     reason: str
