@@ -23,6 +23,24 @@ install
     $ pip install pytest-external-blockers
 
 
+jira
+----
+
+A host registers each Jira server and a client it already built. The plugin
+does not choose a site and does not read credentials.
+
+.. code-block:: python
+
+    from pytest_external_blockers import JiraDefinition, add_jira
+
+    def pytest_external_blockers_add_jira(config):
+        add_jira(config, JiraDefinition("https://jira.example"), client)
+
+``not_blocking`` defaults to ``done``, ``rejected``, and ``closed``.
+An issue those statuses do not cover is blocking, including an issue the
+client cannot read.
+
+
 use
 ---
 

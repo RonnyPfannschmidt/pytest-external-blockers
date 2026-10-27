@@ -9,6 +9,25 @@ from _pytest.config import Config
 from _pytest.outcomes import OutcomeException
 from _pytest.skipping import evaluate_condition
 
+from . import hookspecs
+from .jira import add_jira
+from .jira import get_jira
+from .jira import JiraAlreadyRegistered
+from .jira import JiraClient
+from .jira import JiraDefinition
+from .jira import JiraNotRegistered
+from .jira import RegisteredJira
+
+__all__ = [
+    "JiraAlreadyRegistered",
+    "JiraClient",
+    "JiraDefinition",
+    "JiraNotRegistered",
+    "RegisteredJira",
+    "add_jira",
+    "get_jira",
+]
+
 
 class Blocked(OutcomeException):
     # XXX hackish: on 3k we fake to live in the builtins
@@ -50,6 +69,10 @@ class Block(NamedTuple):
     reason: str
 
 
+def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
+    pluginmanager.add_hookspecs(hookspecs)
+
+
 @pytest.hookimpl()
 def pytest_configure(config: Config):
     config.addinivalue_line(
@@ -60,6 +83,9 @@ def pytest_configure(config: Config):
         "markers",
         "blockif(*conditions, reason): mark a test as blocked from execution",
     )
+    from .jira import _install_hook
+
+    _install_hook(config)
 
 
 def evaluate_block_marks(item: pytest.Item) -> Optional[Block]:
