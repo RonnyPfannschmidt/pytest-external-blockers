@@ -23,6 +23,35 @@ install
     $ pip install pytest-external-blockers
 
 
+issue trackers
+--------------
+
+A tracker definition is a constant. A marker points at it. The first time
+that marker is used, the ``pytest_external_blockers_client`` hook supplies
+the client, and the plugin instance keeps it. The same URL and the same
+credentials share one client. The plugin does not choose a site and it
+does not read a vault.
+
+.. code-block:: python
+
+    import pytest
+    from pytest_external_blockers import Category, IssueTracker
+
+    REDHAT = IssueTracker("redhat", "https://jira.example")
+
+    @pytest.mark.blocked_by(REDHAT, "IQE-1", category=Category.PRODUCT_ISSUE)
+    def test_checkout():
+        ...
+
+The hook returns a ``TrackerClient`` (credentials plus client). Wrap a
+client the process already holds with ``jira_rest_client``. The outcome
+is ``blocked``, and the category is stored on the report.
+
+``not_blocking`` defaults to ``done``, ``rejected``, and ``closed``.
+An issue those statuses do not cover is blocking, including an issue the
+client cannot read. A status, once read, is kept for the session.
+
+
 use
 ---
 
