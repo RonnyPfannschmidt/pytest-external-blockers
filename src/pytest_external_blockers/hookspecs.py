@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import pytest
-from _pytest.config import Config
+
+from pytest_external_blockers.clients import TrackerClient
+from pytest_external_blockers.trackers import IssueTracker
 
 
-@pytest.hookspec
-def pytest_external_blockers_add_jira(config: Config) -> None:
-    """Register Jira servers for this session.
+@pytest.hookspec(firstresult=True)
+def pytest_external_blockers_client(
+    tracker: IssueTracker,
+) -> TrackerClient | None:
+    """Return the client for this tracker definition.
 
-    Call :func:`pytest_external_blockers.add_jira` with a
-    :class:`~pytest_external_blockers.JiraDefinition` and a client the host
-    already built. This plugin does not choose a server or credentials.
+    The plugin calls this the first time a marker uses ``tracker`` and keeps
+    the result on the plugin instance. Include the credentials that identify
+    the client. The same URL and the same credentials share one client.
     """

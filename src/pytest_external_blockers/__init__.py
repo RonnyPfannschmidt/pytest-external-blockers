@@ -10,22 +10,27 @@ from _pytest.outcomes import OutcomeException
 from _pytest.skipping import evaluate_condition
 
 from . import hookspecs
-from .jira import add_jira
-from .jira import get_jira
-from .jira import JiraAlreadyRegistered
-from .jira import JiraClient
-from .jira import JiraDefinition
-from .jira import JiraNotRegistered
-from .jira import RegisteredJira
+from .clients import IssueClient
+from .clients import TrackerClient
+from .credentials import JiraBasicAuth
+from .jira import jira_rest_client
+from .jira import open_jira
+from .plugin import BlockedBy
+from .plugin import ExternalBlockersPlugin
+from .plugin import SESSION_NAME
+from .trackers import Category
+from .trackers import IssueTracker
 
 __all__ = [
-    "JiraAlreadyRegistered",
-    "JiraClient",
-    "JiraDefinition",
-    "JiraNotRegistered",
-    "RegisteredJira",
-    "add_jira",
-    "get_jira",
+    "BlockedBy",
+    "Category",
+    "ExternalBlockersPlugin",
+    "IssueClient",
+    "IssueTracker",
+    "JiraBasicAuth",
+    "TrackerClient",
+    "jira_rest_client",
+    "open_jira",
 ]
 
 
@@ -83,9 +88,14 @@ def pytest_configure(config: Config):
         "markers",
         "blockif(*conditions, reason): mark a test as blocked from execution",
     )
-    from .jira import _install_hook
-
-    _install_hook(config)
+    config.addinivalue_line(
+        "markers",
+        (
+            "blocked_by(tracker, issue, *, category): "
+            "block when an external issue is open"
+        ),
+    )
+    config.pluginmanager.register(ExternalBlockersPlugin(config), SESSION_NAME)
 
 
 def evaluate_block_marks(item: pytest.Item) -> Optional[Block]:
@@ -127,6 +137,26 @@ def pytest_runtest_setup(item: pytest.Item):
     item.__dict__["_should_block"] = should_block = evaluate_block_marks(item)
     if should_block is not None:
         block(should_block.reason)
+    _block_from_tracker(item)
+
+
+def _block_from_tracker(item: pytest.Item) -> None:
+    plugin = item.config.pluginmanager.get_plugin(SESSION_NAME)
+    if not isinstance(plugin, ExternalBlockersPlugin):
+        return
+    use = plugin.blocking_use(item)
+    if use is None:
+        return
+    item.user_properties.extend(_use_properties(use))
+    block(plugin.block_reason(use))
+
+
+def _use_properties(use: BlockedBy) -> list[tuple[str, str]]:
+    return [
+        ("external-blocker-category", use.category.value),
+        ("external-blocker-issue", use.issue),
+        ("external-blocker-tracker", use.tracker.name),
+    ]
 
 
 @pytest.hookimpl(tryfirst=True)
