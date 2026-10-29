@@ -50,18 +50,6 @@ class FakeApi(JiraApi):
         return _Issue(self.name)
 
 
-def _configured(pytester: pytest.Pytester) -> pytest.Config:
-    """Load this plugin once.
-
-    The installed entry point would register the same module again.
-    """
-    return pytester.parseconfigure(
-        "--disable-plugin-autoload",
-        "-p",
-        "pytest_external_blockers",
-    )
-
-
 def _plugin(
     config: pytest.Config,
     provide: Callable[[IssueTracker], TrackerClient],
@@ -113,7 +101,7 @@ def test_credentials_hide_the_token() -> None:
 def test_same_url_and_credentials_share_one_client(
     pytester: pytest.Pytester,
 ) -> None:
-    config = _configured(pytester)
+    config = pytester.parseconfigure()
     created: list[FakeClient] = []
     credentials = JiraBasicAuth("qe@example.com", "secret")
 
@@ -135,7 +123,7 @@ def test_same_url_and_credentials_share_one_client(
 def test_different_credentials_do_not_share_a_client(
     pytester: pytest.Pytester,
 ) -> None:
-    config = _configured(pytester)
+    config = pytester.parseconfigure()
     secret = JiraBasicAuth("qe@example.com", "secret")
     other = JiraBasicAuth("qe@example.com", "other")
 
@@ -153,7 +141,7 @@ def test_different_credentials_do_not_share_a_client(
 def test_status_is_read_once_per_tracker_and_issue(
     pytester: pytest.Pytester,
 ) -> None:
-    config = _configured(pytester)
+    config = pytester.parseconfigure()
     client = FakeClient("In Progress")
     credentials = JiraBasicAuth("qe@example.com", "secret")
     tracker = IssueTracker("redhat", "https://jira.example")
@@ -169,7 +157,7 @@ def test_status_is_read_once_per_tracker_and_issue(
 
 
 def test_closed_status_does_not_block(pytester: pytest.Pytester) -> None:
-    config = _configured(pytester)
+    config = pytester.parseconfigure()
     credentials = JiraBasicAuth("qe@example.com", "secret")
     tracker = IssueTracker("redhat", "https://jira.example")
     plugin = _plugin(
@@ -180,7 +168,7 @@ def test_closed_status_does_not_block(pytester: pytest.Pytester) -> None:
 
 
 def test_missing_hook_blocks(pytester: pytest.Pytester) -> None:
-    config = _configured(pytester)
+    config = pytester.parseconfigure()
     plugin = config.pluginmanager.get_plugin(SESSION_NAME)
     assert isinstance(plugin, ExternalBlockersPlugin)
     tracker = IssueTracker("redhat", "https://jira.example")
