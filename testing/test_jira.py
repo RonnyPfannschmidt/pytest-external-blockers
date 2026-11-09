@@ -116,7 +116,6 @@ def test_same_url_and_credentials_share_one_client(
 
     assert plugin.client_for(first) is plugin.client_for(second)
     assert plugin.client_for(first) is created[0]
-    assert plugin.credentials_for(second) == credentials
     assert len(created) == 2
 
 

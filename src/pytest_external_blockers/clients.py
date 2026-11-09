@@ -4,7 +4,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from pytest_external_blockers.credentials import JiraBasicAuth
+
+class Credentials(Protocol):
+    """The identity of a tracker client: hashable and comparable.
+
+    Two tracker definitions with the same URL and equal credentials share
+    one client. The plugin never looks inside them.
+    """
+
+    def __hash__(self) -> int:
+        ...
 
 
 class IssueClient(Protocol):
@@ -22,5 +31,5 @@ class TrackerClient:
     same URL and the same credentials.
     """
 
-    credentials: JiraBasicAuth
+    credentials: Credentials
     client: IssueClient

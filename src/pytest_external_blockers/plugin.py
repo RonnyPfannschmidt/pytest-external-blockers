@@ -1,15 +1,21 @@
-"""Pytest plugin instance that owns clients and cached issue status."""
+"""Pytest wiring: markers, hooks, and session state for tracker clients."""
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import pytest
 from _pytest.config import Config
+from _pytest.skipping import evaluate_condition
 
+from pytest_external_blockers import hookspecs
+from pytest_external_blockers.clients import Credentials
 from pytest_external_blockers.clients import IssueClient
 from pytest_external_blockers.clients import TrackerClient
-from pytest_external_blockers.credentials import JiraBasicAuth
+from pytest_external_blockers.outcomes import block
+from pytest_external_blockers.outcomes import BLOCKED
+from pytest_external_blockers.outcomes import Blocked
 from pytest_external_blockers.trackers import Category
 from pytest_external_blockers.trackers import IssueTracker
 from pytest_external_blockers.trackers import parse_category
@@ -38,14 +44,9 @@ class ExternalBlockersPlugin:
 
     def __init__(self, config: Config) -> None:
         self._config = config
-        self._clients: dict[tuple[str, JiraBasicAuth], IssueClient] = {}
+        self._clients: dict[tuple[str, Credentials], IssueClient] = {}
         self._by_tracker: dict[IssueTracker, IssueClient | None] = {}
-        self._auth: dict[IssueTracker, JiraBasicAuth] = {}
         self._status: dict[tuple[IssueTracker, str], str | None] = {}
-
-    def credentials_for(self, tracker: IssueTracker) -> JiraBasicAuth | None:
-        """Return the credentials stored for ``tracker``."""
-        return self._auth.get(tracker)
 
     def client_for(self, tracker: IssueTracker) -> IssueClient | None:
         """Return the shared client for ``tracker``, asking the hook once."""
@@ -90,7 +91,6 @@ class ExternalBlockersPlugin:
         tracker: IssueTracker,
         provided: TrackerClient,
     ) -> IssueClient:
-        self._auth[tracker] = provided.credentials
         key = (tracker.url, provided.credentials)
         cached = self._clients.get(key)
         if cached is not None:
@@ -170,3 +170,115 @@ def _issue_key(issue_key: str) -> str:
     if not key:
         raise ValueError("issue key is empty")
     return key
+
+
+class Block(NamedTuple):
+    """The result of evaluate_block_marks()."""
+
+    reason: str
+
+
+def evaluate_block_marks(item: pytest.Item) -> Block | None:
+    """Evaluate block and blockif marks, returning Block if triggered."""
+    for mark in item.iter_markers(name="blockif"):
+        if "condition" not in mark.kwargs:
+            conditions = mark.args
+        else:
+            conditions = (mark.kwargs["condition"],)
+
+        # Unconditional.
+        if not conditions:
+            reason = mark.kwargs.get("reason", "")
+            return Block(reason)
+
+        # If any of the conditions are true.
+        for condition in conditions:
+            result, reason = evaluate_condition(item, mark, condition)
+            if result:
+                return Block(reason)
+
+    for mark in item.iter_markers(name="block"):
+        if "reason" in mark.kwargs:
+            reason = mark.kwargs["reason"]
+        elif mark.args:
+            reason = mark.args[0]
+        else:
+            reason = "unconditional skip"
+        return Block(reason)
+
+    return None
+
+
+def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
+    pluginmanager.add_hookspecs(hookspecs)
+
+
+def pytest_configure(config: Config):
+    config.addinivalue_line(
+        "markers", "block(reason): mark a test as blocked from execution"
+    )
+
+    config.addinivalue_line(
+        "markers",
+        "blockif(*conditions, reason): mark a test as blocked from execution",
+    )
+    config.addinivalue_line(
+        "markers",
+        (
+            "blocked_by(tracker, issue, *, category): "
+            "block when an external issue is open"
+        ),
+    )
+    config.pluginmanager.register(ExternalBlockersPlugin(config), SESSION_NAME)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item: pytest.Item):
+    # Check if block or blockif are specified as pytest marks
+
+    # todo: use stash
+    item.__dict__["_should_block"] = should_block = evaluate_block_marks(item)
+    if should_block is not None:
+        block(should_block.reason)
+    _block_from_tracker(item)
+
+
+def _block_from_tracker(item: pytest.Item) -> None:
+    plugin = item.config.pluginmanager.get_plugin(SESSION_NAME)
+    if not isinstance(plugin, ExternalBlockersPlugin):
+        return
+    use = plugin.blocking_use(item)
+    if use is None:
+        return
+    item.user_properties.extend(_use_properties(use))
+    block(plugin.block_reason(use))
+
+
+def _use_properties(use: BlockedBy) -> list[tuple[str, str]]:
+    return [
+        ("external-blocker-category", use.category.value),
+        ("external-blocker-issue", use.issue),
+        ("external-blocker-tracker", use.tracker.name),
+    ]
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_report_teststatus(report):
+    if report.outcome == BLOCKED:
+        return BLOCKED, "B", BLOCKED.upper()
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    rep = outcome.get_result()
+    excinfo = call.excinfo
+    if excinfo is not None and excinfo.errisinstance(Blocked):
+        rep.outcome = BLOCKED
+
+        evalblock = getattr(item, "_should_block", None)
+        if evalblock is not None and type(rep.longrepr) is tuple:
+            # taken from _pytest.skipping, patch failure location to item name
+            filename, line, reason = rep.longrepr
+            filename, line = item.location[:2]
+            rep.longrepr = filename, line, reason

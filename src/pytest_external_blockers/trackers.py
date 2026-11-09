@@ -32,19 +32,16 @@ class IssueTracker:
 
     name: str
     url: str
-    kind: str
     not_blocking: frozenset[str]
 
     def __init__(
         self,
         name: str,
         url: str,
-        kind: str = "jira",
         not_blocking: Iterable[str] = _DEFAULT_NOT_BLOCKING,
     ) -> None:
         object.__setattr__(self, "name", _tracker_name(name))
         object.__setattr__(self, "url", normalize_tracker_url(url))
-        object.__setattr__(self, "kind", _tracker_kind(kind))
         object.__setattr__(
             self,
             "not_blocking",
@@ -103,14 +100,4 @@ def _tracker_name(name: str) -> str:
     text = name.strip()
     if not text:
         raise ValueError("tracker name is empty")
-    return text
-
-
-def _tracker_kind(kind: str) -> str:
-    if not isinstance(kind, str):
-        got = type(kind).__name__
-        raise TypeError(f"tracker kind must be str, not {got}")
-    text = kind.strip().lower()
-    if not text:
-        raise ValueError("tracker kind is empty")
     return text
