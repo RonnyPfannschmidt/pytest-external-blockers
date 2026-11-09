@@ -12,8 +12,7 @@ class Credentials(Protocol):
     one client. The plugin never looks inside them.
     """
 
-    def __hash__(self) -> int:
-        ...
+    def __hash__(self) -> int: ...
 
 
 class IssueClient(Protocol):

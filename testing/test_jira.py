@@ -206,8 +206,7 @@ def test_blocked_by_marker_reports_the_category(
     pytester: pytest.Pytester,
     run_blocked: Callable[..., pytest.RunResult],
 ) -> None:
-    pytester.makeconftest(
-        """
+    pytester.makeconftest("""
         from pytest_external_blockers import JiraBasicAuth, TrackerClient
 
         class Client:
@@ -227,10 +226,8 @@ def test_blocked_by_marker_reports_the_category(
             assert props["external-blocker-category"] == "product-issue"
             assert props["external-blocker-issue"] == "IQE-1"
             assert props["external-blocker-tracker"] == "redhat"
-        """
-    )
-    pytester.makepyfile(
-        """
+        """)
+    pytester.makepyfile("""
         import pytest
         from pytest_external_blockers import Category, IssueTracker
 
@@ -243,8 +240,7 @@ def test_blocked_by_marker_reports_the_category(
         )
         def test_checkout():
             raise AssertionError("should not run")
-        """
-    )
+        """)
 
     result = run_blocked()
 
@@ -255,8 +251,7 @@ def test_resolved_issue_does_not_block_the_test(
     pytester: pytest.Pytester,
     run_blocked: Callable[..., pytest.RunResult],
 ) -> None:
-    pytester.makeconftest(
-        """
+    pytester.makeconftest("""
         from pytest_external_blockers import JiraBasicAuth, TrackerClient
 
         class Client:
@@ -268,10 +263,8 @@ def test_resolved_issue_does_not_block_the_test(
                 JiraBasicAuth("qe@example.com", "secret"),
                 Client(),
             )
-        """
-    )
-    pytester.makepyfile(
-        """
+        """)
+    pytester.makepyfile("""
         import pytest
         from pytest_external_blockers import Category, IssueTracker
 
@@ -280,8 +273,7 @@ def test_resolved_issue_does_not_block_the_test(
         @pytest.mark.blocked_by(REDHAT, "IQE-1", category="product-issue")
         def test_checkout():
             pass
-        """
-    )
+        """)
 
     result = run_blocked()
 
